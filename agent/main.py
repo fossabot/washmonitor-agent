@@ -20,7 +20,7 @@ class WasherStatus(Enum):
 
 
 # Global vars
-washerStoppedCount = 4  # Counter for stopped washing machine
+washerStoppedCount = 0  # Counter for stopped washing machine
 agentStatus = AgentStatus.IDLE.value  # Use Enum value
 
 def setAgentStatus(status: AgentStatus, user: str = ""):
