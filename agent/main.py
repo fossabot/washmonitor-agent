@@ -20,7 +20,7 @@ class WasherStatus(Enum):
 
 
 # Global vars
-washerStoppedCount = 0  # Counter for stopped washing machine
+washerStoppedCount = 4  # Counter for stopped washing machine
 agentStatus = AgentStatus.IDLE.value  # Use Enum value
 
 def setAgentStatus(status: AgentStatus, user: str = ""):
@@ -35,6 +35,9 @@ def setAgentStatus(status: AgentStatus, user: str = ""):
 
 def getAgentStatus():
     return requests.get(apiURL + "/getAgentStatus").json()["status"]
+
+def getAgentUser():
+    return requests.get(apiURL + "/getAgentStatus").json()["user"]
 
 
 def getWashingMachineStatus():
@@ -64,6 +67,37 @@ def getWashingMachineStatus():
             return WasherStatus.STOPPED.value
 
     return WasherStatus.STOPPED.value  # Default to stopped
+
+
+def sendDiscordNotification(message):
+    requests.post(
+        os.environ.get('DISCORD_URL'),
+        json={"content": message}
+    )
+
+
+def sendSmsMessage(message, destination):
+    sms_url = os.environ.get('SEND_SMS_URL')
+    sms_user = os.environ.get('SMS_USER')
+    sms_password = os.environ.get('SMS_PASSWORD')
+    headers = {"Content-Type": "application/json"}
+    data = {
+        "message": message,
+        "phoneNumbers": [destination]
+    }
+    response = requests.post(
+        sms_url,
+        auth=(sms_user, sms_password),
+        headers=headers,
+        json=data
+    )
+
+    # Print if the message was sent successfully
+    if response.status_code == 200 or response.status_code == 202:
+        print("SMS sent successfully")
+    else:
+        print(f"Failed to send SMS: {response.status_code} - {response.text}")
+
         
 
 if __name__ == "__main__":
@@ -93,16 +127,22 @@ if __name__ == "__main__":
                 washerStoppedCount = 0
 
             if washerStoppedCount >= 5:
-                agentStatus = setAgentStatus(AgentStatus.IDLE)
                 print("Washing machine is stopped for 5 checks. Setting agent status to idle.")
-                setAgentStatus(AgentStatus.IDLE)
+
+                # Get the user who started the monitoring
+                user = str(getAgentUser()).lower()
+                print(f"User who started monitoring: {user}")
+
+                # Set the agent status to idle
+                agentStatus = setAgentStatus(AgentStatus.IDLE)
                 washerStoppedCount = 0
 
                 # Notify the user
-                requests.post(
-                    os.environ.get('DISCORD_URL'),
-                    json={"content": "✅ Washing machine has finished running"}
-                )
+                if user == "mason":
+                    sendDiscordNotification("✅ Washing machine has finished running")
+                elif user == "bren":
+                    destinationNumber = os.environ.get('DESTINATION_PHONE_NUMBER')
+                    sendSmsMessage("✅ Washing machine has finished running", destinationNumber)
             else:
                 print(f"Washing machine is {washerStatus}. Agent status remains as monitor.")
 
