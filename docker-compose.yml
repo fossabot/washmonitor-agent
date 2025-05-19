@@ -19,6 +19,9 @@ services:
       - API_URL=http://api:8001
       - WASHER_CAMERA_URL=http://your_camera_url
       - DISCORD_URL=https://your_discord_webhook_url
+      - SEND_SMS_URL=https://your_sms_webhook_url
+      - SMS_USER=your_sms_username
+      - SMS_PASSWORD=your_sms_password
     depends_on:
       - api
     restart: unless-stopped
