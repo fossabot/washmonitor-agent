@@ -82,3 +82,18 @@ paths:
                     example: Mason
         '500':
           description: An error occurred while getting the agent status
+  /health:
+    get:
+      summary: Verificar el estado de salud del agente
+      description: Este endpoint permite comprobar que el servidor está funcionando correctamente.
+      responses:
+        '200':
+          description: El servidor está saludable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
