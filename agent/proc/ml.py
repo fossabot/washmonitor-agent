@@ -45,7 +45,7 @@ def cropToControlPanel(imagePath):
         xSize = x2 - x1
         ySize = y2 - y1
 
-        # Add space around bounding box to make the output image 275x2
+        # Add space around bounding box to make the output image 275x215
         xBuffer = (275 - xSize) // 2
         yBuffer = (215 - ySize)
 
