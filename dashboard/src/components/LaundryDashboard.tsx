@@ -81,14 +81,14 @@ const handleButtonClick = async (person: 'bren' | 'mason') => {
                 {(!masonActive && !brenActive) && (
                     <>
                         <div
-                            className={`flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-pink-500 text-white`}
+                            className={`flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-rose-400 text-white`}
                             onClick={() => handleButtonClick('bren')}
                         >
                             {brenActive ? 'Bren is using the washer' : 'Bren'}
                             {brenActive && <div className="loader mt-4"></div>}
                         </div>
                         <div
-                            className={`flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-purple-500 text-white`}
+                            className={`flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-purple-600 text-white`}
                             onClick={() => handleButtonClick('mason')}
                         >
                             {masonActive ? 'Mason is using the washer' : 'Mason'}
@@ -98,7 +98,7 @@ const handleButtonClick = async (person: 'bren' | 'mason') => {
                 )}
                 {brenActive && !masonActive && (
                     <div
-                        className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-pink-500 text-white h-full w-full"
+                        className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-rose-400 text-white h-full w-full"
                         onClick={() => handleButtonClick('bren')}
                     >
                         Bren is using the washer
@@ -107,7 +107,7 @@ const handleButtonClick = async (person: 'bren' | 'mason') => {
                 )}
                 {masonActive && !brenActive && (
                     <div
-                        className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-purple-500 text-white h-full w-full"
+                        className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-purple-600 text-white h-full w-full"
                         onClick={() => handleButtonClick('mason')}
                     >
                         Mason is using the washer
