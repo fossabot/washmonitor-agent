@@ -21,7 +21,7 @@ def cropToControlPanel(imagePath):
         str: The path to the cropped image file.
     """
 
-    status = False # Keeps track of if control panel is detected
+    status = False
     croppedImagePath = imagePath
 
     # Load the YOLO model for control panel detection
@@ -32,8 +32,8 @@ def cropToControlPanel(imagePath):
     result = model(imagePath)[0]  # Perform inference on the image
 
     # Only proceed if there is at least one detection
-    if result and hasattr(result, "boxes") and len(result.boxes) == 1: # If a control panel is detected
-        status = True 
+    if result and hasattr(result, "boxes") and len(result.boxes) == 1:
+        status = True  # Set status to true if a control panel is detected
         boxCoords = json.loads(result.to_json())[0]["box"]
         x1 = boxCoords["x1"]
         y1 = boxCoords["y1"]
