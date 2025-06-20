@@ -1,4 +1,4 @@
-FROM ultralytics/ultralytics:latest-nvidia-cuda
+FROM ultralytics/ultralytics:latest-python
 
 WORKDIR /app
 
