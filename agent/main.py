@@ -139,10 +139,12 @@ if __name__ == "__main__":
 
                 # Notify the user
                 if user == "mason":
-                    sendDiscordNotification("✅ Washing machine has finished running")
+                    # sendDiscordNotification("✅ Washing machine has finished running")
+                    destinationNumber = os.environ.get('MASON_PHONE_NUMBER')
+                    sendSmsMessage("✅ Washing machine has finished running", destinationNumber)
                 elif user == "bren":
-                    destinationNumber = os.environ.get('DESTINATION_PHONE_NUMBER')
-                    sendSmsMessage("✅ Washing machine has finished running bbg", destinationNumber)
+                    destinationNumber = os.environ.get('BREN_PHONE_NUMBER')
+                    sendSmsMessage("✅ Washing machine has finished running bbg 😘", destinationNumber)
             else:
                 print(f"Washing machine is {washerStatus}. Agent status remains as monitor.")
 
