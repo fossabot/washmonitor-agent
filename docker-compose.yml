@@ -12,7 +12,7 @@ services:
 
   agent:
     build:
-      context: ./agent
+      context: ./agent-washer
       dockerfile: Dockerfile
     container_name: washmonitor-agent
     environment:
