@@ -47,15 +47,15 @@ func main() {
 		})
 	})
 
-	app.Post("/submitStatus", func(c *fiber.Ctx) error {
+	app.Post("/submitState", func(c *fiber.Ctx) error {
 		var req struct {
 			State string `json:"state"`
 		}
-		if req.State != "vibrating" && req.State != "stationary" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "State must be 'vibrating' or 'stationary'"})
-		}
 		if err := c.BodyParser(&req); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+		}
+		if req.State != "vibrating" && req.State != "stationary" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "State must be 'vibrating' or 'stationary'"})
 		}
 		stateMutex.Lock()
 		stateHistory = append(stateHistory, StateSubmission{State: req.State, Timestamp: time.Now()})
