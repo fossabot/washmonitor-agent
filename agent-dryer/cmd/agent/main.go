@@ -26,6 +26,7 @@ type StateSubmission struct {
 }
 
 func main() {
+	serviceStartTime := time.Now()
 
 	err := godotenv.Load()
 	if err != nil {
@@ -125,10 +126,12 @@ func main() {
 				log.Println("State has changed in the last 5 minutes.")
 			}
 		} else {
-			log.Println("No state submissions in the last 5 minutes.")
+			if time.Since(serviceStartTime) >= 5*time.Minute {
+				log.Println("No state submissions in the last 5 minutes.")
 
-			// Notify the user that the connection with the submitting device is lost
-			// TODO - Notify the user and set the agent status to "idle"
+				// Notify the user that the connection with the submitting device is lost
+				// TODO - Notify the user and set the agent status to "idle"
+			}
 		}
 	})
 	// Prune old state submissions every 10 minutes
