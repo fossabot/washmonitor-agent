@@ -29,15 +29,15 @@ def setAgentStatus(status: AgentStatus, user: str = ""):
         if not user:
             raise ValueError("User is required when status is 'monitor'")
         payload["user"] = user
-    requests.post(apiURL + "/setAgentStatus", json=payload)
+    requests.post(apiURL + "/washer/setAgentStatus", json=payload)
     return status.value
 
 
 def getAgentStatus():
-    return requests.get(apiURL + "/getAgentStatus").json()["status"]
+    return requests.get(apiURL + "/washer/getAgentStatus").json()["status"]
 
 def getAgentUser():
-    return requests.get(apiURL + "/getAgentStatus").json()["user"]
+    return requests.get(apiURL + "/washer/getAgentStatus").json()["user"]
 
 
 def getWashingMachineStatus():
