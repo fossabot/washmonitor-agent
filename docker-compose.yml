@@ -10,11 +10,20 @@ services:
       - API_ENV=production
     restart: unless-stopped
 
-  agent:
+  agent-dryer:
+    build:
+      context: ./agent-dryer
+      dockerfile: Dockerfile
+    container_name: washmonitor-agent-dryer
+    ports:
+      - "8005:8005"
+    restart: unless-stopped
+
+  agent-washer:
     build:
       context: ./agent-washer
       dockerfile: Dockerfile
-    container_name: washmonitor-agent
+    container_name: washmonitor-agent-washer
     environment:
       - API_URL=http://api:8001
       - WASHER_CAMERA_URL=http://your_camera_url
