@@ -12,7 +12,7 @@ const LaundryDashboard = () => {
     useEffect(() => {
         const fetchStatus = async () => {
             try {
-                const res = await fetch(`${API_URL}/getAgentStatus`);
+                const res = await fetch(`${API_URL}/washer/getAgentStatus`);
                 if (!res.ok) return;
                 const data = await res.json();
                 if (data.status === 'monitor' && data.user) {
@@ -47,7 +47,7 @@ const handleButtonClick = async (person: 'bren' | 'mason') => {
     const user = isActivating ? person : '';
 
     try {
-        await fetch(`${API_URL}/setAgentStatus`, {
+        await fetch(`${API_URL}/washer/setAgentStatus`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
