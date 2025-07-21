@@ -29,7 +29,7 @@ func main() {
 
 	err := godotenv.Load()
 	if err != nil {
-		panic("Error loading .env file")
+		log.Println("Warning: .env file not found, proceeding with environment variables.")
 	}
 
 	API_SERVER_URL := os.Getenv("API_SERVER_URL")
