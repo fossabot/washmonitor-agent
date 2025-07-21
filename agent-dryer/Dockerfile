@@ -15,6 +15,6 @@ FROM scratch
 
 COPY --from=builder /agent /agent
 
-EXPOSE 8001
+EXPOSE 8005
 
 ENTRYPOINT ["/agent"]
