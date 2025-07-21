@@ -18,6 +18,8 @@ services:
     ports:
       - "8005:8005"
     restart: unless-stopped
+    depends_on:
+      - api
     environment:
       - API_SERVER_URL=http://api:8001
       - SEND_SMS_URL=https://your_sms_webhook_url
