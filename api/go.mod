@@ -2,7 +2,7 @@ module github.com/masoncfrancis/washmonitor-agent/api
 
 go 1.24.3
 
-require github.com/gofiber/fiber/v2 v2.52.7
+require github.com/gofiber/fiber/v2 v2.52.9
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
