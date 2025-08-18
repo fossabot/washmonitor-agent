@@ -42,12 +42,14 @@ func main() {
 	app.Use(cors.New())
 
 	app.Get("/status", func(c *fiber.Ctx) error {
+		log.Printf("Received %s request at %s", c.Method(), c.Path())
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"status": "ok",
 		})
 	})
 
 	app.Post("/submitState", func(c *fiber.Ctx) error {
+		log.Printf("Received %s request at %s", c.Method(), c.Path())
 		var req struct {
 			State string `json:"state"`
 		}
