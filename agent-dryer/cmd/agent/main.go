@@ -96,10 +96,19 @@ func main() {
 			}
 		}
 		stateMutex.Unlock()
+
 		if len(recent) > 0 {
-			// Check if the earliest submission in recent is at least 5 minutes old
-			if recent[0].Timestamp.After(cutoff) {
-				log.Println("Insufficient data: state submissions do not cover the last 5 minutes.")
+			// Ensure recent is sorted by Timestamp ascending (oldest to newest)
+			// (If stateHistory is always appended in order, this is not needed)
+
+			// Check if the oldest submission is at or before the cutoff
+			// if recent[0].Timestamp.After(cutoff.Add(5 * time.Second)) { // allow small clock drift
+			// 	log.Println("Insufficient data: state submissions do not cover the last 5 minutes.")
+			// 	return
+			// }
+			// Check if the newest submission is recent (within 15 seconds)
+			if time.Since(recent[len(recent)-1].Timestamp) > 15*time.Second {
+				log.Println("Most recent state submission is too old.")
 				return
 			}
 			// Check for gaps between submissions (greater than 15 seconds)
@@ -130,8 +139,6 @@ func main() {
 		} else {
 			if time.Since(serviceStartTime) >= 5*time.Minute {
 				log.Println("No state submissions in the last 5 minutes.")
-
-				// Notify the user that the connection with the submitting device is lost
 				// TODO - Notify the user and set the agent status to "idle"
 			}
 		}
