@@ -7,6 +7,7 @@ import (
 	"os"
 	"sync"
 	"time"
+	"bytes"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -142,9 +143,11 @@ func main() {
 			} else {
 				log.Printf("State not consistent for last 5 minutes: %s", reason)
 			}
-		} else {
+		}
+		 else {
 			log.Printf("Agent status is '%s', skipping state consistency check.", agentStatus.Status)
 		}
+	
     })
 
 	
