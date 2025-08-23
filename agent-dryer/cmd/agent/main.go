@@ -77,21 +77,74 @@ func main() {
 
         var agentStatus struct {
             Status string `json:"status"`
+			User string `json:"user"`
         }
         if err := json.NewDecoder(resp.Body).Decode(&agentStatus); err != nil {
             log.Printf("Failed to decode agent status response: %v", err)
             return
         }
+		log.Printf("Agent status: %s", agentStatus.Status)
 
-        // Check state consistency
-        stateMutex.Lock()
-        consistent, state, reason := isStateConsistent(stateHistory, time.Now(), serviceStartTime)
-        stateMutex.Unlock()
-        if consistent {
-            log.Printf("State has been consistent (%s) for the last 5 minutes.", state)
-        } else {
-            log.Printf("State not consistent for last 5 minutes: %s", reason)
-        }
+		if agentStatus.Status == "monitor" {
+
+			// Check state consistency
+			stateMutex.Lock()
+			consistent, state, reason := isStateConsistent(stateHistory, time.Now(), serviceStartTime)
+			stateMutex.Unlock()
+			if consistent {
+				log.Printf("State has been consistent (%s) for the last 5 minutes.", state)
+
+				if state == "stationary" {
+					// Send POST request to API server to update status to 'idle'
+					payload := map[string]string{"status": "idle"}
+					payloadBytes, _ := json.Marshal(payload)
+					resp, err := http.Post(API_SERVER_URL+"/dryer/updateStatus", "application/json",
+						bytes.NewBuffer(payloadBytes))
+					if err != nil {
+						log.Printf("Failed to update status to 'idle': %v", err)
+					} else {
+						resp.Body.Close()
+						if resp.StatusCode == http.StatusOK {
+							log.Println("Successfully updated status to 'idle'")
+						} else {
+							log.Printf("Failed to update status to 'idle', server responded with status: %s", resp.Status)
+						}
+					}
+
+					// Notify user
+					if agentStatus.User != "user1" {
+						userURL := os.Getenv("USER1_URL")
+						if userURL != "" {
+							_, err := http.Post(userURL, "text/plain", bytes.NewBufferString("The dryer has finished running ✅"))
+							if err != nil {
+								log.Printf("Failed to send notification to user1: %v", err)
+							} else {
+								log.Println("Notification sent to user1")
+							}
+						} else {
+							log.Println("USER1_URL not set, skipping notification")
+						}
+					} 
+					if agentStatus.User != "user2" {
+						userURL := os.Getenv("USER2_URL")
+						if userURL != "" {
+							_, err := http.Post(userURL, "text/plain", bytes.NewBufferString("The dryer has finished running ✅"))
+							if err != nil {
+								log.Printf("Failed to send notification to user2: %v", err)
+							} else {
+								log.Println("Notification sent to user2")
+							}
+						} else {
+							log.Println("USER2_URL not set, skipping notification")
+						}
+				} 
+
+			} else {
+				log.Printf("State not consistent for last 5 minutes: %s", reason)
+			}
+		} else {
+			log.Printf("Agent status is '%s', skipping state consistency check.", agentStatus.Status)
+		}
     })
 
 	
