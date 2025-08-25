@@ -79,7 +79,7 @@ paths:
                     example: idle
                   user:
                     type: string
-                    example: Mason
+                    example: User2
         '500':
           description: An error occurred while getting the agent status
   /health:
