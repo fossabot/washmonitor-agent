@@ -144,7 +144,7 @@ if __name__ == "__main__":
                     sendSmsMessage("✅ Washing machine has finished running", destinationNumber)
                 elif user == "user1":
                     destinationNumber = os.environ.get('USER1_PHONE_NUMBER')
-                    sendSmsMessage("✅ Washing machine has finished running bbg 😘", destinationNumber)
+                    sendSmsMessage("✅ Washing machine has finished running", destinationNumber)
             else:
                 print(f"Washing machine is {washerStatus}. Agent status remains as monitor.")
 
