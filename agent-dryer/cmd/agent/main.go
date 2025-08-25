@@ -96,10 +96,10 @@ func main() {
 				log.Printf("State has been consistent (%s) for the last 5 minutes.", state)
 
 				if state == "stationary" {
-					// Send POST request to API server to update status to 'idle'
+					// Send POST request to API server to update status to 'idle' (standardized endpoint)
 					payload := map[string]string{"status": "idle"}
 					payloadBytes, _ := json.Marshal(payload)
-					resp, err := http.Post(API_SERVER_URL+"/dryer/updateStatus", "application/json",
+					resp, err := http.Post(API_SERVER_URL+"/dryer/setAgentStatus", "application/json",
 						bytes.NewBuffer(payloadBytes))
 					if err != nil {
 						log.Printf("Failed to update status to 'idle': %v", err)
@@ -112,43 +112,57 @@ func main() {
 						}
 					}
 
-					// Notify user
-					if agentStatus.User != "user1" {
-						userURL := os.Getenv("USER1_URL")
-						if userURL != "" {
-							_, err := http.Post(userURL, "text/plain", bytes.NewBufferString("The dryer has finished running ✅"))
-							if err != nil {
-								log.Printf("Failed to send notification to user1: %v", err)
-							} else {
-								log.Println("Notification sent to user1")
-							}
-						} else {
-							log.Println("USER1_URL not set, skipping notification")
+					// Notify only the user who started monitoring
+					// Send SMS notification using the same logic as main.py
+					user := agentStatus.User
+					var destinationNumber string
+					switch user {
+					case "user1":
+						destinationNumber = os.Getenv("USER1_PHONE_NUMBER")
+					case "user2":
+						destinationNumber = os.Getenv("USER2_PHONE_NUMBER")
+					default:
+						log.Printf("Unknown user '%s', skipping SMS notification", user)
+						break
+					}
+					if destinationNumber != "" {
+						smsURL := os.Getenv("SEND_SMS_URL")
+						smsUser := os.Getenv("SMS_USER")
+						smsPassword := os.Getenv("SMS_PASSWORD")
+						smsPayload := map[string]interface{}{
+							"message": "✅ Dryer has finished running",
+							"phoneNumbers": []string{destinationNumber},
 						}
-					} 
-					if agentStatus.User != "user2" {
-						userURL := os.Getenv("USER2_URL")
-						if userURL != "" {
-							_, err := http.Post(userURL, "text/plain", bytes.NewBufferString("The dryer has finished running ✅"))
-							if err != nil {
-								log.Printf("Failed to send notification to user2: %v", err)
-							} else {
-								log.Println("Notification sent to user2")
-							}
+						smsPayloadBytes, _ := json.Marshal(smsPayload)
+						req, err := http.NewRequest("POST", smsURL, bytes.NewBuffer(smsPayloadBytes))
+						if err != nil {
+							log.Printf("Failed to create SMS request: %v", err)
 						} else {
-							log.Println("USER2_URL not set, skipping notification")
+							req.Header.Set("Content-Type", "application/json")
+							req.SetBasicAuth(smsUser, smsPassword)
+							client := &http.Client{}
+							resp, err := client.Do(req)
+							if err != nil {
+								log.Printf("Failed to send SMS: %v", err)
+							} else {
+								defer resp.Body.Close()
+								if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusAccepted {
+									log.Println("SMS sent successfully")
+								} else {
+									log.Printf("Failed to send SMS: %d - %s", resp.StatusCode, resp.Status)
+								}
+							}
 						}
-				} 
+					}
 
 			} else {
 				log.Printf("State not consistent for last 5 minutes: %s", reason)
 			}
-		}
-		 else {
+		} else {
 			log.Printf("Agent status is '%s', skipping state consistency check.", agentStatus.Status)
 		}
 	
-    })
+	})
 
 	
 	// Prune old state submissions every 10 minutes
