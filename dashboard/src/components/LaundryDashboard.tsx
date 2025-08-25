@@ -5,8 +5,8 @@ import { useState, useEffect } from 'react';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const LaundryDashboard = () => {
-    const [brenActive, setBrenActive] = useState(false);
-    const [masonActive, setMasonActive] = useState(false);
+    const [user1Active, setUser1Active] = useState(false);
+    const [user2Active, setUser2Active] = useState(false);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -16,19 +16,19 @@ const LaundryDashboard = () => {
                 if (!res.ok) return;
                 const data = await res.json();
                 if (data.status === 'monitor' && data.user) {
-                    if (data.user.toLowerCase() === 'bren') {
-                        setBrenActive(true);
-                        setMasonActive(false);
-                    } else if (data.user.toLowerCase() === 'mason') {
-                        setMasonActive(true);
-                        setBrenActive(false);
+                    if (data.user.toLowerCase() === 'user1') {
+                        setUser1Active(true);
+                        setUser2Active(false);
+                    } else if (data.user.toLowerCase() === 'user2') {
+                        setUser2Active(true);
+                        setUser1Active(false);
                     } else {
-                        setBrenActive(false);
-                        setMasonActive(false);
+                        setUser1Active(false);
+                        setUser2Active(false);
                     }
                 } else if (data.status === 'idle') {
-                    setBrenActive(false);
-                    setMasonActive(false);
+                    setUser1Active(false);
+                    setUser2Active(false);
                 }
             } catch (e) {
                 console.log('Error fetching status:', e);
@@ -40,9 +40,9 @@ const LaundryDashboard = () => {
         return () => clearInterval(interval);
     }, []);
 
-const handleButtonClick = async (person: 'bren' | 'mason') => {
+const handleButtonClick = async (person: 'user1' | 'user2') => {
     setLoading(true);
-    const isActivating = person === 'bren' ? !brenActive : !masonActive;
+    const isActivating = person === 'user1' ? !user1Active : !user2Active;
     const status = isActivating ? 'monitor' : 'idle';
     const user = isActivating ? person : '';
 
@@ -59,12 +59,12 @@ const handleButtonClick = async (person: 'bren' | 'mason') => {
     }
 
     setTimeout(() => {
-        if (person === 'bren') {
-            setBrenActive(!brenActive);
-            if (masonActive) setMasonActive(false);
+        if (person === 'user1') {
+            setUser1Active(!user1Active);
+            if (user2Active) setUser2Active(false);
         } else {
-            setMasonActive(!masonActive);
-            if (brenActive) setBrenActive(false);
+            setUser2Active(!user2Active);
+            if (user1Active) setUser1Active(false);
         }
         setLoading(false);
     }, 300);
@@ -72,45 +72,45 @@ const handleButtonClick = async (person: 'bren' | 'mason') => {
 
     return (
         <div className="flex flex-col h-screen w-screen">
-            {(!masonActive && !brenActive) && (
+            {(!user2Active && !user1Active) && (
                 <div className="w-full bg-gray-900 text-white text-center py-4 text-2xl font-semibold shadow-md z-10">
                     Who is using the washer?
                 </div>
             )}
             <div className="flex flex-1">
-                {(!masonActive && !brenActive) && (
+                {(!user2Active && !user1Active) && (
                     <>
                         <div
                             className={`flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-rose-400 text-white`}
-                            onClick={() => handleButtonClick('bren')}
+                            onClick={() => handleButtonClick('user1')}
                         >
-                            {brenActive ? 'Bren is using the washer' : 'Bren'}
-                            {brenActive && <div className="loader mt-4"></div>}
+                            {user1Active ? 'User1 is using the washer' : 'User1'}
+                            {user1Active && <div className="loader mt-4"></div>}
                         </div>
                         <div
                             className={`flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-purple-600 text-white`}
-                            onClick={() => handleButtonClick('mason')}
+                            onClick={() => handleButtonClick('user2')}
                         >
-                            {masonActive ? 'Mason is using the washer' : 'Mason'}
-                            {masonActive && <div className="loader mt-4"></div>}
+                            {user2Active ? 'User2 is using the washer' : 'User2'}
+                            {user2Active && <div className="loader mt-4"></div>}
                         </div>
                     </>
                 )}
-                {brenActive && !masonActive && (
+                {user1Active && !user2Active && (
                     <div
                         className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-rose-400 text-white h-full w-full"
-                        onClick={() => handleButtonClick('bren')}
+                        onClick={() => handleButtonClick('user1')}
                     >
-                        Bren is using the washer
+                        User1 is using the washer
                         <div className="loader mt-4"></div>
                     </div>
                 )}
-                {masonActive && !brenActive && (
+                {user2Active && !user1Active && (
                     <div
                         className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-purple-600 text-white h-full w-full"
-                        onClick={() => handleButtonClick('mason')}
+                        onClick={() => handleButtonClick('user2')}
                     >
-                        Mason is using the washer
+                        User2 is using the washer
                         <div className="loader mt-4"></div>
                     </div>
                 )}
