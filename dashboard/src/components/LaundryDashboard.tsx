@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 
+
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const LaundryDashboard = () => {
@@ -156,7 +158,7 @@ const handleButtonClick = async (person: 'user1' | 'user2') => {
                         onClick={() => handleButtonClick('user1')}
                     >
                         {userInfo.user1.name} is using the washer
-                        <div className="loader mt-4"></div>
+                        <div className="loader-running mt-4"></div>
                     </div>
                 )}
                 {user2Active && !user1Active && (
@@ -166,7 +168,7 @@ const handleButtonClick = async (person: 'user1' | 'user2') => {
                         onClick={() => handleButtonClick('user2')}
                     >
                         {userInfo.user2.name} is using the washer
-                        <div className="loader mt-4"></div>
+                        <div className="loader-running mt-4"></div>
                     </div>
                 )}
                 {loading && (
