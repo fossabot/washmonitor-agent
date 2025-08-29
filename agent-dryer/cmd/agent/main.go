@@ -1,13 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 	"sync"
 	"time"
-	"bytes"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -66,28 +66,27 @@ func main() {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "State submitted"})
 	})
 
-    c := cron.New()
-    c.AddFunc("@every 5s", func() {
-        // Get agent status from API server
-        resp, err := http.Get(API_SERVER_URL + "/dryer/getAgentStatus")
-        if err != nil {
-            log.Printf("Failed to get agent status: %v", err)
-            return
-        }
-        defer resp.Body.Close()
+	c := cron.New()
+	c.AddFunc("@every 5s", func() {
+		// Get agent status from API server
+		resp, err := http.Get(API_SERVER_URL + "/dryer/getAgentStatus")
+		if err != nil {
+			log.Printf("Failed to get agent status: %v", err)
+			return
+		}
+		defer resp.Body.Close()
 
-        var agentStatus struct {
-            Status string `json:"status"`
-			User string `json:"user"`
-        }
-        if err := json.NewDecoder(resp.Body).Decode(&agentStatus); err != nil {
-            log.Printf("Failed to decode agent status response: %v", err)
-            return
-        }
+		var agentStatus struct {
+			Status string `json:"status"`
+			User   string `json:"user"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&agentStatus); err != nil {
+			log.Printf("Failed to decode agent status response: %v", err)
+			return
+		}
 		log.Printf("Agent status: %s", agentStatus.Status)
 
 		if agentStatus.Status == "monitor" {
-
 			// Check state consistency
 			stateMutex.Lock()
 			consistent, state, reason := isStateConsistent(stateHistory, time.Now(), serviceStartTime)
@@ -130,7 +129,7 @@ func main() {
 						smsUser := os.Getenv("SMS_USER")
 						smsPassword := os.Getenv("SMS_PASSWORD")
 						smsPayload := map[string]interface{}{
-							"message": "✅ Dryer has finished running",
+							"message":      "✅ Dryer has finished running",
 							"phoneNumbers": []string{destinationNumber},
 						}
 						smsPayloadBytes, _ := json.Marshal(smsPayload)
@@ -154,17 +153,15 @@ func main() {
 							}
 						}
 					}
-
+				}
 			} else {
 				log.Printf("State not consistent for last 5 minutes: %s", reason)
 			}
 		} else {
 			log.Printf("Agent status is '%s', skipping state consistency check.", agentStatus.Status)
 		}
-	
 	})
 
-	
 	// Prune old state submissions every 10 minutes
 	c.AddFunc("@every 10m", func() {
 		stateMutex.Lock()
@@ -183,59 +180,58 @@ func main() {
 	app.Listen(":8005")
 }
 
-
 // isStateConsistent checks if the state has been consistent for the last 5 minutes
 // with at least one record every 15 seconds and no more than 15 seconds between records.
 // If the service has not been running for 5 minutes, it returns early.
 func isStateConsistent(history []StateSubmission, now time.Time, serviceStartTime time.Time) (bool, string, string) {
-    const (
-        window     = 5 * time.Minute
-        maxGap     = 15 * time.Second
-        minRecords = int(window / maxGap)
-    )
-    // If service hasn't been running for 5 minutes, skip check
-    if now.Sub(serviceStartTime) < window {
-        return false, "", "Service has not been running for 5 minutes yet"
-    }
+	const (
+		window     = 5 * time.Minute
+		maxGap     = 15 * time.Second
+		minRecords = int(window / maxGap)
+	)
+	// If service hasn't been running for 5 minutes, skip check
+	if now.Sub(serviceStartTime) < window {
+		return false, "", "Service has not been running for 5 minutes yet"
+	}
 
-    if len(history) == 0 {
-        return false, "", "No state submissions available"
-    }
+	if len(history) == 0 {
+		return false, "", "No state submissions available"
+	}
 
-    // Filter for last 5 minutes
-    cutoff := now.Add(-window)
-    var recent []StateSubmission
-    for _, s := range history {
-        if !s.Timestamp.Before(cutoff) {
-            recent = append(recent, s)
-        }
-    }
-    if len(recent) == 0 {
-        return false, "", "No state submissions in the last 5 minutes"
-    }
+	// Filter for last 5 minutes
+	cutoff := now.Add(-window)
+	var recent []StateSubmission
+	for _, s := range history {
+		if !s.Timestamp.Before(cutoff) {
+			recent = append(recent, s)
+		}
+	}
+	if len(recent) == 0 {
+		return false, "", "No state submissions in the last 5 minutes"
+	}
 
-    // Check for gaps and consistency
-    last := recent[0]
-    state := last.State
-    for i := 1; i < len(recent); i++ {
-        if recent[i].State != state {
-            return false, "", "State changed within the last 5 minutes"
-        }
-        if recent[i].Timestamp.Sub(last.Timestamp) > maxGap {
-            return false, "", "Gap between submissions exceeds 15 seconds"
-        }
-        last = recent[i]
-    }
+	// Check for gaps and consistency
+	last := recent[0]
+	state := last.State
+	for i := 1; i < len(recent); i++ {
+		if recent[i].State != state {
+			return false, "", "State changed within the last 5 minutes"
+		}
+		if recent[i].Timestamp.Sub(last.Timestamp) > maxGap {
+			return false, "", "Gap between submissions exceeds 15 seconds"
+		}
+		last = recent[i]
+	}
 
-    // Check if the first record covers the full window
-    if now.Sub(recent[0].Timestamp) > window {
-        return false, "", "Not enough data to cover the last 5 minutes"
-    }
+	// Check if the first record covers the full window
+	if now.Sub(recent[0].Timestamp) > window {
+		return false, "", "Not enough data to cover the last 5 minutes"
+	}
 
-    // Optionally, check if there are enough records (not strictly required if gaps are checked)
-    if len(recent) < minRecords {
-        return false, "", "Not enough records for 5 minutes (should be ~20+)"
-    }
+	// Optionally, check if there are enough records (not strictly required if gaps are checked)
+	if len(recent) < minRecords {
+		return false, "", "Not enough records for 5 minutes (should be ~20+)"
+	}
 
-    return true, state, ""
+	return true, state, ""
 }

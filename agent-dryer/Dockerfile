@@ -7,8 +7,7 @@ RUN go mod download
 
 COPY . .
 
-WORKDIR /app/cmd/agent
-RUN CGO_ENABLED=0 GOOS=linux go build -o /agent
+RUN CGO_ENABLED=0 GOOS=linux go build -o /agent ./cmd/agent
 
 # Stage 2: imagen final
 FROM scratch

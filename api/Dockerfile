@@ -8,8 +8,8 @@ RUN go mod download
 
 COPY . .
 
-WORKDIR /app/cmd/server
-RUN CGO_ENABLED=0 GOOS=linux go build -o /server
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
 
 # Stage 2: imagen final
 FROM scratch
@@ -18,4 +18,4 @@ COPY --from=builder /server /server
 
 EXPOSE 8001
 
-ENTRYPOINT ["/server"]
+CMD ["/server"]
