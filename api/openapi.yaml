@@ -192,8 +192,8 @@ components:
           example: Jane
         color:
           type: string
-          description: The Tailwind color class (without 'bg-') to use for this user.
-          example: rose-400
+          description: Color hex code
+          example: '#22c55e'
   /health:
     get:
       summary: Verificar el estado de salud del agente
