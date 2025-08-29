@@ -7,9 +7,10 @@ import { useState, useEffect } from 'react';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const LaundryDashboard = () => {
-    const [user1Active, setUser1Active] = useState(false);
-    const [user2Active, setUser2Active] = useState(false);
-    const [loading, setLoading] = useState(false);
+    // Track status for both appliances
+    const [washerUser, setWasherUser] = useState<string | null>(null);
+    const [dryerUser, setDryerUser] = useState<string | null>(null);
+    const [loading, setLoading] = useState<null | 'washer' | 'dryer'>(null);
     type UserInfo = { name: string; color: string };
     const [userInfo, setUserInfo] = useState<{ user1: UserInfo; user2: UserInfo }>({
         user1: { name: 'User1', color: '#3b82f6' }, // blue-500 as hex
@@ -17,26 +18,33 @@ const LaundryDashboard = () => {
     });
     const [userNamesError, setUserNamesError] = useState(false);
 
+
+    // 2-stage interaction state
+    const [stage, setStage] = useState<'main' | 'select-user'>('main');
+    const [selectedAppliance, setSelectedAppliance] = useState<null | 'washer' | 'dryer'>(null);
+
     useEffect(() => {
         const fetchStatus = async () => {
             try {
-                const res = await fetch(`${API_URL}/washer/getAgentStatus`);
-                if (!res.ok) return;
-                const data = await res.json();
-                if (data.status === 'monitor' && data.user) {
-                    if (data.user.toLowerCase() === 'user1') {
-                        setUser1Active(true);
-                        setUser2Active(false);
-                    } else if (data.user.toLowerCase() === 'user2') {
-                        setUser2Active(true);
-                        setUser1Active(false);
+                const [washerRes, dryerRes] = await Promise.all([
+                    fetch(`${API_URL}/washer/getAgentStatus`),
+                    fetch(`${API_URL}/dryer/getAgentStatus`),
+                ]);
+                if (washerRes.ok) {
+                    const washerData = await washerRes.json();
+                    if (washerData.status === 'monitor' && washerData.user) {
+                        setWasherUser(washerData.user);
                     } else {
-                        setUser1Active(false);
-                        setUser2Active(false);
+                        setWasherUser(null);
                     }
-                } else if (data.status === 'idle') {
-                    setUser1Active(false);
-                    setUser2Active(false);
+                }
+                if (dryerRes.ok) {
+                    const dryerData = await dryerRes.json();
+                    if (dryerData.status === 'monitor' && dryerData.user) {
+                        setDryerUser(dryerData.user);
+                    } else {
+                        setDryerUser(null);
+                    }
                 }
             } catch (e) {
                 console.log('Error fetching status:', e);
@@ -88,35 +96,59 @@ const LaundryDashboard = () => {
         return () => clearInterval(interval);
     }, []);
 
-const handleButtonClick = async (person: 'user1' | 'user2') => {
-    setLoading(true);
-    const isActivating = person === 'user1' ? !user1Active : !user2Active;
-    const status = isActivating ? 'monitor' : 'idle';
-    const user = isActivating ? person : '';
-
-    try {
-        await fetch(`${API_URL}/washer/setAgentStatus`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status, user }),
-        });
-    } catch (e) {
-        console.log('Error setting status:', e);
-    }
-
-    setTimeout(() => {
-        if (person === 'user1') {
-            setUser1Active(!user1Active);
-            if (user2Active) setUser2Active(false);
-        } else {
-            setUser2Active(!user2Active);
-            if (user1Active) setUser1Active(false);
+    // Stage 1: select appliance, Stage 2: select user
+    // Clicking an in-use appliance cancels it (sets to idle)
+    const handleApplianceClick = (appliance: 'washer' | 'dryer') => {
+        if ((appliance === 'washer' && washerUser) || (appliance === 'dryer' && dryerUser)) {
+            setLoading(appliance);
+            const apiPath = appliance === 'washer' ? 'washer' : 'dryer';
+            fetch(`${API_URL}/${apiPath}/setAgentStatus`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'idle' }),
+            }).finally(() => {
+                setTimeout(() => {
+                    if (appliance === 'washer') {
+                        setWasherUser(null);
+                    } else {
+                        setDryerUser(null);
+                    }
+                    setLoading(null);
+                }, 300);
+            });
+            return;
         }
-        setLoading(false);
-    }, 300);
-};
+        setSelectedAppliance(appliance);
+        setStage('select-user');
+    };
+
+    const handleUserClick = async (person: 'user1' | 'user2') => {
+        if (!selectedAppliance) return;
+        setLoading(selectedAppliance);
+        const apiPath = selectedAppliance === 'washer' ? 'washer' : 'dryer';
+        try {
+            await fetch(`${API_URL}/${apiPath}/setAgentStatus`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'monitor', user: person }),
+            });
+        } catch (e) {
+            console.log('Error setting status:', e);
+        }
+        setTimeout(() => {
+            if (selectedAppliance === 'washer') {
+                setWasherUser(person);
+            } else {
+                setDryerUser(person);
+            }
+            setLoading(null);
+            setStage('main');
+            setSelectedAppliance(null);
+        }, 300);
+    };
+
+    // handleClear removed; handled by handleApplianceClick
+
 
     return (
         <div className="flex flex-col h-screen w-screen">
@@ -125,60 +157,87 @@ const handleButtonClick = async (person: 'user1' | 'user2') => {
                     Could not obtain user names. Using default placeholders.
                 </div>
             )}
-            {(!user2Active && !user1Active) && (
-                <div className="w-full bg-gray-900 text-white text-center py-4 text-2xl font-semibold shadow-md z-10">
-                    Who is using the washer?
+            {stage === 'main' && (
+                <div className="flex flex-1 flex-row w-full h-full">
+                    {/* Washer splitscreen */}
+                    <div
+                        className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white h-full"
+                        style={{ backgroundColor: washerUser ? userInfo[washerUser as 'user1' | 'user2']?.color : '#3b82f6' }}
+                        onClick={() => handleApplianceClick('washer')}
+                    >
+                        {washerUser ? (
+                            <>
+                                <div className="text-2xl">{userInfo[washerUser as 'user1' | 'user2']?.name} is using the</div>
+                                <div className="text-3xl font-bold mb-2">Washer</div>
+                                <div className="loader-running mt-4"></div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="text-3xl font-bold mb-2">Washer</div>
+                                <div className="text-xl opacity-80">Tap to use</div>
+                            </>
+                        )}
+                    </div>
+                    {/* Dryer splitscreen */}
+                    <div
+                        className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white h-full"
+                        style={{ backgroundColor: dryerUser ? userInfo[dryerUser as 'user1' | 'user2']?.color : '#0c3a84ff' }}
+                        onClick={() => handleApplianceClick('dryer')}
+                    >
+                        
+                        {dryerUser ? (
+                            <>
+                                <div className="text-2xl">{userInfo[dryerUser as 'user1' | 'user2']?.name} is using the</div>
+                                <div className="text-3xl font-bold mb-2">Dryer</div>
+                                <div className="loader-running mt-4"></div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="text-3xl font-bold mb-2">Dryer</div>
+                                <div className="text-xl opacity-80">Tap to use</div>
+                            </>
+                            
+                        )}
+                    </div>
                 </div>
             )}
-            <div className="flex flex-1">
-                {(!user2Active && !user1Active) && (
-                    <>
+            {stage === 'select-user' && selectedAppliance && (
+                <div className="flex flex-1 flex-col justify-center items-center">
+                    <div className="w-full bg-gray-900 text-white text-center py-4 text-2xl font-semibold shadow-md z-10">
+                        Who is using the {selectedAppliance}?
+                    </div>
+                    <div className="flex flex-row w-full h-full">
                         <div
-                            className={"flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white"}
+                            className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white h-full"
                             style={{ backgroundColor: userInfo.user1.color }}
-                            onClick={() => handleButtonClick('user1')}
+                            onClick={() => handleUserClick('user1')}
                         >
-                            {user1Active ? `${userInfo.user1.name} is using the washer` : userInfo.user1.name}
-                            {user1Active && <div className="loader mt-4"></div>}
+                            {userInfo.user1.name}
                         </div>
                         <div
-                            className={"flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white"}
+                            className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white h-full"
                             style={{ backgroundColor: userInfo.user2.color }}
-                            onClick={() => handleButtonClick('user2')}
+                            onClick={() => handleUserClick('user2')}
                         >
-                            {user2Active ? `${userInfo.user2.name} is using the washer` : userInfo.user2.name}
-                            {user2Active && <div className="loader mt-4"></div>}
+                            {userInfo.user2.name}
                         </div>
-                    </>
-                )}
-                {user1Active && !user2Active && (
-                    <div
-                        className={"flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white h-full w-full"}
-                        style={{ backgroundColor: userInfo.user1.color }}
-                        onClick={() => handleButtonClick('user1')}
+                    </div>
+                    <button
+                        className="mt-8 px-6 py-2 bg-gray-300 text-gray-900 rounded shadow hover:bg-gray-400 font-semibold"
+                        onClick={() => { setStage('main'); setSelectedAppliance(null); }}
                     >
-                        {userInfo.user1.name} is using the washer
-                        <div className="loader-running mt-4"></div>
-                    </div>
-                )}
-                {user2Active && !user1Active && (
+                        Cancel
+                    </button>
+                </div>
+            )}
+            {/* Loading overlay for API actions, but not using loader-running */}
+            {loading && (
+                <div
+                    className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-30 flex justify-center items-center z-50 transition-opacity duration-500">
                     <div
-                        className={"flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white h-full w-full"}
-                        style={{ backgroundColor: userInfo.user2.color }}
-                        onClick={() => handleButtonClick('user2')}
-                    >
-                        {userInfo.user2.name} is using the washer
-                        <div className="loader-running mt-4"></div>
-                    </div>
-                )}
-                {loading && (
-                    <div
-                        className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center z-50 transition-opacity duration-500">
-                        <div
-                            className="loader w-16 h-16 border-4 border-t-black border-b-black border-solid rounded-full animate-spin"></div>
-                    </div>
-                )}
-            </div>
+                        className="loader w-16 h-16 border-4 border-t-black border-b-black border-solid rounded-full animate-spin"></div>
+                </div>
+            )}
         </div>
     );
 };

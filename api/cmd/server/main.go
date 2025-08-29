@@ -15,7 +15,12 @@ type AgentState struct {
 	User   string `json:"user"`
 }
 
-var agentState = AgentState{
+var washerAgentState = AgentState{
+	Status: "idle",
+	User:   "",
+}
+
+var dryerAgentState = AgentState{
 	Status: "idle",
 	User:   "",
 }
@@ -77,26 +82,26 @@ func main() {
 			})
 		}
 		if body.Status == "idle" {
-			agentState.Status = "idle"
-			agentState.User = ""
+			washerAgentState.Status = "idle"
+			washerAgentState.User = ""
 		} else {
-			agentState.Status = "monitor"
-			agentState.User = body.User
+			washerAgentState.Status = "monitor"
+			washerAgentState.User = body.User
 		}
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"message": "Agent status set successfully",
-			"status":  agentState.Status,
-			"user":    agentState.User,
+			"status":  washerAgentState.Status,
+			"user":    washerAgentState.User,
 		})
 	})
 
 	app.Get("/washer/getAgentStatus", func(c *fiber.Ctx) error {
-		user := agentState.User
-		if agentState.Status == "idle" {
+		user := washerAgentState.User
+		if washerAgentState.Status == "idle" {
 			user = ""
 		}
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"status": agentState.Status,
+			"status": washerAgentState.Status,
 			"user":   user,
 		})
 	})
@@ -119,26 +124,26 @@ func main() {
 			})
 		}
 		if body.Status == "idle" {
-			agentState.Status = "idle"
-			agentState.User = ""
+			dryerAgentState.Status = "idle"
+			dryerAgentState.User = ""
 		} else {
-			agentState.Status = "monitor"
-			agentState.User = body.User
+			dryerAgentState.Status = "monitor"
+			dryerAgentState.User = body.User
 		}
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"message": "Agent status set successfully",
-			"status":  agentState.Status,
-			"user":    agentState.User,
+			"status":  dryerAgentState.Status,
+			"user":    dryerAgentState.User,
 		})
 	})
 
 	app.Get("/dryer/getAgentStatus", func(c *fiber.Ctx) error {
-		user := agentState.User
-		if agentState.Status == "idle" {
+		user := dryerAgentState.User
+		if dryerAgentState.Status == "idle" {
 			user = ""
 		}
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
-			"status": agentState.Status,
+			"status": dryerAgentState.Status,
 			"user":   user,
 		})
 	})
