@@ -25,6 +25,8 @@ services:
       - SEND_SMS_URL=https://your_sms_webhook_url
       - SMS_USER=your_sms_username
       - SMS_PASSWORD=your_sms_password
+      - USER1_PHONE_NUMBER=user1_phone_number
+      - USER2_PHONE_NUMBER=user2_phone_number
 
   agent-washer:
     build:
@@ -38,7 +40,8 @@ services:
       - SEND_SMS_URL=https://your_sms_webhook_url
       - SMS_USER=your_sms_username
       - SMS_PASSWORD=your_sms_password
-      - BREN_PHONE_NUMBER=your_bren_phone_number
+      - USER1_PHONE_NUMBER=user1_phone_number
+      - USER2_PHONE_NUMBER=user2_phone_number
     depends_on:
       - api
     restart: unless-stopped
