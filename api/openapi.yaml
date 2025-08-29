@@ -6,10 +6,10 @@ info:
 servers:
   - url: http://localhost:8001
 paths:
-  /setAgentStatus:
+  /washer/setAgentStatus:
     post:
-      summary: Set the status of the agent to either 'monitor' or 'idle'
-      description: This endpoint allows the user to set the status of the agent to either 'monitor' or 'idle'
+      summary: Set the status of the washer agent to either 'monitor' or 'idle'
+      description: This endpoint allows the user to set the status of the washer agent to either 'monitor' or 'idle'.
       requestBody:
         required: true
         content:
@@ -38,7 +38,7 @@ paths:
                       description: The user (optional if status is 'idle')
       responses:
         '200':
-          description: The status of the agent has been set
+          description: The status of the washer agent has been set
           content:
             application/json:
               schema:
@@ -50,6 +50,9 @@ paths:
                   status:
                     type: string
                     example: monitor
+                  user:
+                    type: string
+                    example: User1
         '400':
           description: The request was malformed
           content:
@@ -62,13 +65,13 @@ paths:
                     example: Malformed request
         '500':
           description: An error occurred while setting the agent status
-  /getAgentStatus:
+  /washer/getAgentStatus:
     get:
-      summary: Get the status of the agent
-      description: This endpoint allows the user to get the status of the agent
+      summary: Get the status of the washer agent
+      description: This endpoint allows the user to get the status of the washer agent
       responses:
         '200':
-          description: The status of the agent has been retrieved
+          description: The status of the washer agent has been retrieved
           content:
             application/json:
               schema:
@@ -79,9 +82,118 @@ paths:
                     example: idle
                   user:
                     type: string
-                    example: User2
+                    example: ""
         '500':
           description: An error occurred while getting the agent status
+  /dryer/setAgentStatus:
+    post:
+      summary: Set the status of the dryer agent to either 'monitor' or 'idle'
+      description: This endpoint allows the user to set the status of the dryer agent to either 'monitor' or 'idle'.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ status, user ]
+                  properties:
+                    status:
+                      type: string
+                      enum: [ monitor ]
+                      description: The status must be 'monitor'
+                    user:
+                      type: string
+                      description: The user currently using the dryer
+                - type: object
+                  required: [ status ]
+                  properties:
+                    status:
+                      type: string
+                      enum: [ idle ]
+                      description: The status must be 'idle'
+                    user:
+                      type: string
+                      description: The user (optional if status is 'idle')
+      responses:
+        '200':
+          description: The status of the dryer agent has been set
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Agent status set successfully
+                  status:
+                    type: string
+                    example: monitor
+                  user:
+                    type: string
+                    example: User1
+        '400':
+          description: The request was malformed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Malformed request
+        '500':
+          description: An error occurred while setting the agent status
+  /dryer/getAgentStatus:
+    get:
+      summary: Get the status of the dryer agent
+      description: This endpoint allows the user to get the status of the dryer agent
+      responses:
+        '200':
+          description: The status of the dryer agent has been retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: idle
+                  user:
+                    type: string
+                    example: ""
+        '500':
+          description: An error occurred while getting the agent status
+  /users/names:
+    get:
+      summary: Get the list of user names and colors
+      description: This endpoint allows the user to retrieve the list of user names and their associated colors.
+      responses:
+        '200':
+          description: The list of user names and colors has been retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user1:
+                    $ref: '#/components/schemas/UserInfo'
+                  user2:
+                    $ref: '#/components/schemas/UserInfo'
+      
+components:
+  schemas:
+    UserInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The display name of the user.
+          example: Jane
+        color:
+          type: string
+          description: The Tailwind color class (without 'bg-') to use for this user.
+          example: rose-400
   /health:
     get:
       summary: Verificar el estado de salud del agente

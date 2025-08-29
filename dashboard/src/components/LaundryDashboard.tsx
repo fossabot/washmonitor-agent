@@ -8,6 +8,12 @@ const LaundryDashboard = () => {
     const [user1Active, setUser1Active] = useState(false);
     const [user2Active, setUser2Active] = useState(false);
     const [loading, setLoading] = useState(false);
+    type UserInfo = { name: string; color: string };
+    const [userInfo, setUserInfo] = useState<{ user1: UserInfo; user2: UserInfo }>({
+        user1: { name: 'User1', color: '#3b82f6' }, // blue-500 as hex
+        user2: { name: 'User2', color: '#22c55e' }, // green-500 as hex
+    });
+    const [userNamesError, setUserNamesError] = useState(false);
 
     useEffect(() => {
         const fetchStatus = async () => {
@@ -35,6 +41,46 @@ const LaundryDashboard = () => {
             }
         };
 
+        const fetchNames = async () => {
+            try {
+                const res = await fetch(`${API_URL}/users/names`);
+                if (!res.ok) {
+                    setUserNamesError(true);
+                    setUserInfo({
+                        user1: { name: 'User1', color: '#3b82f6' },
+                        user2: { name: 'User2', color: '#22c55e' },
+                    });
+                    return;
+                }
+                const data = await res.json();
+                if (
+                    data.user1 && data.user2 &&
+                    typeof data.user1.name === 'string' && typeof data.user2.name === 'string' &&
+                    typeof data.user1.color === 'string' && typeof data.user2.color === 'string'
+                ) {
+                    setUserInfo({
+                        user1: { name: data.user1.name, color: data.user1.color },
+                        user2: { name: data.user2.name, color: data.user2.color },
+                    });
+                    setUserNamesError(false);
+                } else {
+                    setUserNamesError(true);
+                    setUserInfo({
+                        user1: { name: 'User1', color: '#3b82f6' },
+                        user2: { name: 'User2', color: '#22c55e' },
+                    });
+                }
+            } catch (e) {
+                setUserNamesError(true);
+                setUserInfo({
+                    user1: { name: 'User1', color: '#3b82f6' },
+                    user2: { name: 'User2', color: '#22c55e' },
+                });
+                console.log('Error fetching user names:', e);
+            }
+        };
+
+        fetchNames();
         fetchStatus();
         const interval = setInterval(fetchStatus, 5000);
         return () => clearInterval(interval);
@@ -72,6 +118,11 @@ const handleButtonClick = async (person: 'user1' | 'user2') => {
 
     return (
         <div className="flex flex-col h-screen w-screen">
+            {userNamesError && (
+                <div className="w-full bg-red-600 text-white text-center py-2 text-lg font-semibold shadow-md z-20">
+                    Could not obtain user names. Using default placeholders.
+                </div>
+            )}
             {(!user2Active && !user1Active) && (
                 <div className="w-full bg-gray-900 text-white text-center py-4 text-2xl font-semibold shadow-md z-10">
                     Who is using the washer?
@@ -81,36 +132,40 @@ const handleButtonClick = async (person: 'user1' | 'user2') => {
                 {(!user2Active && !user1Active) && (
                     <>
                         <div
-                            className={`flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-rose-400 text-white`}
+                            className={"flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white"}
+                            style={{ backgroundColor: userInfo.user1.color }}
                             onClick={() => handleButtonClick('user1')}
                         >
-                            {user1Active ? 'User1 is using the washer' : 'User1'}
+                            {user1Active ? `${userInfo.user1.name} is using the washer` : userInfo.user1.name}
                             {user1Active && <div className="loader mt-4"></div>}
                         </div>
                         <div
-                            className={`flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-purple-600 text-white`}
+                            className={"flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white"}
+                            style={{ backgroundColor: userInfo.user2.color }}
                             onClick={() => handleButtonClick('user2')}
                         >
-                            {user2Active ? 'User2 is using the washer' : 'User2'}
+                            {user2Active ? `${userInfo.user2.name} is using the washer` : userInfo.user2.name}
                             {user2Active && <div className="loader mt-4"></div>}
                         </div>
                     </>
                 )}
                 {user1Active && !user2Active && (
                     <div
-                        className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-rose-400 text-white h-full w-full"
+                        className={"flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white h-full w-full"}
+                        style={{ backgroundColor: userInfo.user1.color }}
                         onClick={() => handleButtonClick('user1')}
                     >
-                        User1 is using the washer
+                        {userInfo.user1.name} is using the washer
                         <div className="loader mt-4"></div>
                     </div>
                 )}
                 {user2Active && !user1Active && (
                     <div
-                        className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words bg-purple-600 text-white h-full w-full"
+                        className={"flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white h-full w-full"}
+                        style={{ backgroundColor: userInfo.user2.color }}
                         onClick={() => handleButtonClick('user2')}
                     >
-                        User2 is using the washer
+                        {userInfo.user2.name} is using the washer
                         <div className="loader mt-4"></div>
                     </div>
                 )}
