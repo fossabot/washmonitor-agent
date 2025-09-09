@@ -2,6 +2,10 @@
 
 The agent service for washmonitor
 
+## To Do
+- Add dryer cycle monitoring using a vibration sensor
+- Write docs so the public can use my code
+
 ## Design
 
 ### Agent State
