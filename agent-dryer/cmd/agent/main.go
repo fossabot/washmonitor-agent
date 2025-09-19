@@ -16,9 +16,14 @@ import (
 )
 
 // StateSubmission holds a state and its timestamp
+
 var (
-	stateHistory []StateSubmission
-	stateMutex   sync.Mutex
+	stateHistory        []StateSubmission
+	stateMutex          sync.Mutex
+	monitorActive       bool
+	monitorCancel       chan struct{}
+	stationaryTimer     time.Duration
+	lastStationaryState bool
 )
 
 type StateSubmission struct {
@@ -27,7 +32,6 @@ type StateSubmission struct {
 }
 
 func main() {
-	serviceStartTime := time.Now()
 
 	err := godotenv.Load()
 	if err != nil {
@@ -87,78 +91,130 @@ func main() {
 		log.Printf("Agent status: %s", agentStatus.Status)
 
 		if agentStatus.Status == "monitor" {
-			// Check state consistency
-			stateMutex.Lock()
-			consistent, state, reason := isStateConsistent(stateHistory, time.Now(), serviceStartTime)
-			stateMutex.Unlock()
-			if consistent {
-				log.Printf("State has been consistent (%s) for the last 5 minutes.", state)
-
-				if state == "stationary" {
-					// Send POST request to API server to update status to 'idle' (standardized endpoint)
-					payload := map[string]string{"status": "idle"}
-					payloadBytes, _ := json.Marshal(payload)
-					resp, err := http.Post(API_SERVER_URL+"/dryer/setAgentStatus", "application/json",
-						bytes.NewBuffer(payloadBytes))
-					if err != nil {
-						log.Printf("Failed to update status to 'idle': %v", err)
-					} else {
-						resp.Body.Close()
-						if resp.StatusCode == http.StatusOK {
-							log.Println("Successfully updated status to 'idle'")
-						} else {
-							log.Printf("Failed to update status to 'idle', server responded with status: %s", resp.Status)
-						}
-					}
-
-					// Notify only the user who started monitoring
-					// Send SMS notification using the same logic as main.py
-					user := agentStatus.User
-					var destinationNumber string
-					switch user {
-					case "user1":
-						destinationNumber = os.Getenv("USER1_PHONE_NUMBER")
-					case "user2":
-						destinationNumber = os.Getenv("USER2_PHONE_NUMBER")
-					default:
-						log.Printf("Unknown user '%s', skipping SMS notification", user)
-						break
-					}
-					if destinationNumber != "" {
-						smsURL := os.Getenv("SEND_SMS_URL")
-						smsUser := os.Getenv("SMS_USER")
-						smsPassword := os.Getenv("SMS_PASSWORD")
-						smsPayload := map[string]interface{}{
-							"message":      "✅ Dryer has finished running",
-							"phoneNumbers": []string{destinationNumber},
-						}
-						smsPayloadBytes, _ := json.Marshal(smsPayload)
-						req, err := http.NewRequest("POST", smsURL, bytes.NewBuffer(smsPayloadBytes))
-						if err != nil {
-							log.Printf("Failed to create SMS request: %v", err)
-						} else {
-							req.Header.Set("Content-Type", "application/json")
-							req.SetBasicAuth(smsUser, smsPassword)
-							client := &http.Client{}
-							resp, err := client.Do(req)
-							if err != nil {
-								log.Printf("Failed to send SMS: %v", err)
-							} else {
-								defer resp.Body.Close()
-								if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusAccepted {
-									log.Println("SMS sent successfully")
+			if !monitorActive {
+				monitorActive = true
+				if monitorCancel != nil {
+					close(monitorCancel)
+				}
+				monitorCancel = make(chan struct{})
+				go func(user string, cancelChan chan struct{}) {
+					log.Println("Starting stationary timer goroutine (reset on state change)...")
+					ticker := time.NewTicker(1 * time.Second)
+					defer ticker.Stop()
+					for {
+						select {
+						case <-cancelChan:
+							log.Println("Monitor observation cancelled (status changed or new monitor started)")
+							monitorActive = false
+							return
+						case <-ticker.C:
+							stateMutex.Lock()
+							n := len(stateHistory)
+							lastState := ""
+							if n > 0 {
+								lastState = stateHistory[n-1].State
+							}
+							if lastState == "stationary" {
+								if !lastStationaryState {
+									// Just became stationary, reset timer
+									stationaryTimer = 0
+									lastStationaryState = true
+									log.Println("State became stationary, timer started/reset.")
 								} else {
-									log.Printf("Failed to send SMS: %d - %s", resp.StatusCode, resp.Status)
+									stationaryTimer += time.Second
+								}
+								if stationaryTimer >= 5*time.Minute {
+									log.Println("Stationary for 5 uninterrupted minutes. Notifying user and setting status to idle.")
+									// Send POST request to API server to update status to 'idle'
+									payload := map[string]string{"status": "idle"}
+									payloadBytes, _ := json.Marshal(payload)
+									resp, err := http.Post(API_SERVER_URL+"/dryer/setAgentStatus", "application/json",
+										bytes.NewBuffer(payloadBytes))
+									if err != nil {
+										log.Printf("Failed to update status to 'idle': %v", err)
+									} else {
+										resp.Body.Close()
+										if resp.StatusCode == http.StatusOK {
+											log.Println("Successfully updated status to 'idle'")
+										} else {
+											log.Printf("Failed to update status to 'idle', server responded with status: %s", resp.Status)
+										}
+									}
+									// Notify only the user who started monitoring
+									var destinationNumber string
+									switch user {
+									case "user1":
+										destinationNumber = os.Getenv("USER1_PHONE_NUMBER")
+									case "user2":
+										destinationNumber = os.Getenv("USER2_PHONE_NUMBER")
+									default:
+										log.Printf("Unknown user '%s', skipping SMS notification", user)
+									}
+									if destinationNumber != "" {
+										smsURL := os.Getenv("SEND_SMS_URL")
+										smsUser := os.Getenv("SMS_USER")
+										smsPassword := os.Getenv("SMS_PASSWORD")
+										smsPayload := map[string]interface{}{
+											"message":      "✅ Dryer has finished running",
+											"phoneNumbers": []string{destinationNumber},
+										}
+										smsPayloadBytes, _ := json.Marshal(smsPayload)
+										req, err := http.NewRequest("POST", smsURL, bytes.NewBuffer(smsPayloadBytes))
+										if err != nil {
+											log.Printf("Failed to create SMS request: %v", err)
+										} else {
+											req.Header.Set("Content-Type", "application/json")
+											req.SetBasicAuth(smsUser, smsPassword)
+											client := &http.Client{}
+											resp, err := client.Do(req)
+											if err != nil {
+												log.Printf("Failed to send SMS: %v", err)
+											} else {
+												defer resp.Body.Close()
+												if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusAccepted {
+													log.Println("SMS sent successfully")
+												} else {
+													log.Printf("Failed to send SMS: %d - %s", resp.StatusCode, resp.Status)
+												}
+											}
+										}
+									}
+									// Reset timer and state for next monitoring session
+									stationaryTimer = 0
+									lastStationaryState = false
+									monitorActive = false
+									stateMutex.Unlock()
+									return
+								}
+							} else {
+								if lastStationaryState {
+									// State changed away from stationary, reset timer
+									stationaryTimer = 0
+									lastStationaryState = false
+									log.Println("State changed from stationary, timer reset.")
 								}
 							}
+							stateMutex.Unlock()
 						}
 					}
-				}
-			} else {
-				log.Printf("State not consistent for last 5 minutes: %s", reason)
+				}(agentStatus.User, monitorCancel)
 			}
 		} else {
-			log.Printf("Agent status is '%s', skipping state consistency check.", agentStatus.Status)
+			if monitorActive {
+				// Cancel any running monitor goroutine
+				if monitorCancel != nil {
+					close(monitorCancel)
+					monitorCancel = nil
+				}
+				monitorActive = false
+				log.Println("Timer goroutine cancelled due to status change to idle or non-monitor.")
+			}
+			// Reset timer and state when not monitoring
+			stateMutex.Lock()
+			stationaryTimer = 0
+			lastStationaryState = false
+			stateMutex.Unlock()
+			log.Printf("Agent status is '%s', timer is not running.", agentStatus.Status)
 		}
 	})
 
