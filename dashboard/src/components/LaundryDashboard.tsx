@@ -202,11 +202,11 @@ const LaundryDashboard = () => {
                 </div>
             )}
             {stage === 'select-user' && selectedAppliance && (
-                <div className="flex flex-1 flex-col justify-center items-center">
+                <div className="flex flex-1 flex-col h-full w-full">
                     <div className="w-full bg-gray-900 text-white text-center py-4 text-2xl font-semibold shadow-md z-10">
                         Who is using the {selectedAppliance}?
                     </div>
-                    <div className="flex flex-row w-full h-full">
+                    <div className="flex flex-row w-full flex-1">
                         <div
                             className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white h-full"
                             style={{ backgroundColor: userInfo.user1.color }}
@@ -222,12 +222,13 @@ const LaundryDashboard = () => {
                             {userInfo.user2.name}
                         </div>
                     </div>
-                    <button
-                        className="mt-8 px-6 py-2 bg-gray-300 text-gray-900 rounded shadow hover:bg-gray-400 font-semibold"
+                    <div
+                        className="w-full bg-gray-700 text-white text-center py-6 text-2xl font-semibold shadow-md cursor-pointer hover:bg-gray-600 transition-colors duration-150"
                         onClick={() => { setStage('main'); setSelectedAppliance(null); }}
+                        style={{ borderTop: '1px solid #4b5563' }}
                     >
                         Cancel
-                    </button>
+                    </div>
                 </div>
             )}
             {/* Loading overlay for API actions, but not using loader-running */}
