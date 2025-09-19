@@ -37,6 +37,8 @@ services:
       context: ./agent-washer
       dockerfile: Dockerfile
     container_name: washmonitor-agent-washer
+    ports:
+      - "8005:8005"
     environment:
       - API_URL=http://api:8001
       - WASHER_CAMERA_URL=http://your_camera_url
