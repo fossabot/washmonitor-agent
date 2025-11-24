@@ -1,6 +1,10 @@
 # washmonitor-agent
 
-The agent service for washmonitor
+A service that uses computer vision ML models to let me know when my non-smart washer is finished running
+
+## To Do
+- Add dryer cycle monitoring using a vibration sensor
+- Write docs so the public can use my code
 
 ## Design
 

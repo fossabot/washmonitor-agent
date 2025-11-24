@@ -1,4 +1,3 @@
-# Stage 1: build
 FROM golang:alpine AS builder
 
 WORKDIR /app
@@ -8,14 +7,13 @@ RUN go mod download
 
 COPY . .
 
-
-RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -o /agent ./cmd/agent
 
 # Stage 2: imagen final
 FROM scratch
 
-COPY --from=builder /server /server
+COPY --from=builder /agent /agent
 
-EXPOSE 8001
+EXPOSE 8005
 
-CMD ["/server"]
+ENTRYPOINT ["/agent"]

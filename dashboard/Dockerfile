@@ -8,6 +8,8 @@ ARG NODE_ENV=production
 COPY . .
 RUN npm i
 
+ARG NEXT_TELEMETRY_DISABLED=1
+
 EXPOSE 3000
 
 RUN npm run build

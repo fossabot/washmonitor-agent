@@ -29,15 +29,15 @@ def setAgentStatus(status: AgentStatus, user: str = ""):
         if not user:
             raise ValueError("User is required when status is 'monitor'")
         payload["user"] = user
-    requests.post(apiURL + "/setAgentStatus", json=payload)
+    requests.post(apiURL + "/washer/setAgentStatus", json=payload)
     return status.value
 
 
 def getAgentStatus():
-    return requests.get(apiURL + "/getAgentStatus").json()["status"]
+    return requests.get(apiURL + "/washer/getAgentStatus").json()["status"]
 
 def getAgentUser():
-    return requests.get(apiURL + "/getAgentStatus").json()["user"]
+    return requests.get(apiURL + "/washer/getAgentStatus").json()["user"]
 
 
 def getWashingMachineStatus():
@@ -138,13 +138,13 @@ if __name__ == "__main__":
                 washerStoppedCount = 0
 
                 # Notify the user
-                if user == "mason":
+                if user == "user2":
                     # sendDiscordNotification("✅ Washing machine has finished running")
-                    destinationNumber = os.environ.get('MASON_PHONE_NUMBER')
+                    destinationNumber = os.environ.get('USER2_PHONE_NUMBER')
                     sendSmsMessage("✅ Washing machine has finished running", destinationNumber)
-                elif user == "bren":
-                    destinationNumber = os.environ.get('BREN_PHONE_NUMBER')
-                    sendSmsMessage("✅ Washing machine has finished running bbg 😘", destinationNumber)
+                elif user == "user1":
+                    destinationNumber = os.environ.get('USER1_PHONE_NUMBER')
+                    sendSmsMessage("✅ Washing machine has finished running", destinationNumber)
             else:
                 print(f"Washing machine is {washerStatus}. Agent status remains as monitor.")
 
