@@ -161,7 +161,7 @@ const LaundryDashboard = () => {
                 <div className="flex flex-1 flex-row w-full h-full">
                     {/* Washer splitscreen */}
                     <div
-                        className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center wrap-break-word text-white h-full"
+                        className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white h-full"
                         style={{ backgroundColor: washerUser ? userInfo[washerUser as 'user1' | 'user2']?.color : '#3b82f6' }}
                         onClick={() => handleApplianceClick('washer')}
                     >
@@ -180,7 +180,7 @@ const LaundryDashboard = () => {
                     </div>
                     {/* Dryer splitscreen */}
                     <div
-                        className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center wrap-break-word text-white h-full"
+                        className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white h-full"
                         style={{ backgroundColor: dryerUser ? userInfo[dryerUser as 'user1' | 'user2']?.color : '#0c3a84ff' }}
                         onClick={() => handleApplianceClick('dryer')}
                     >
@@ -208,14 +208,14 @@ const LaundryDashboard = () => {
                     </div>
                     <div className="flex flex-row w-full flex-1">
                         <div
-                            className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center wrap-break-word text-white h-full"
+                            className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white h-full"
                             style={{ backgroundColor: userInfo.user1.color }}
                             onClick={() => handleUserClick('user1')}
                         >
                             {userInfo.user1.name}
                         </div>
                         <div
-                            className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center wrap-break-word text-white h-full"
+                            className="flex-1 flex flex-col justify-center items-center text-4xl cursor-pointer text-center break-words text-white h-full"
                             style={{ backgroundColor: userInfo.user2.color }}
                             onClick={() => handleUserClick('user2')}
                         >
